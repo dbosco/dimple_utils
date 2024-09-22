@@ -1,4 +1,5 @@
 **/venv/
+**/t
 .idea/
 **/index
 **/__pycache__

@@ -42,3 +42,9 @@ Create a source distribution:
 ```shell
 python setup.py sdist
 ```
+
+## Testing modules
+
+```shell
+python3 -m unittest tests.test_logging_utils
+```
