@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 
-def setup_logging(output_dir, log_level=logging.INFO, log_file=None):
+def setup_logging(output_dir, log_level=logging.INFO, log_file=None, disable_file_hander = False):
     """
     Sets up the logging system to log both to a file and the console.
 
@@ -11,7 +11,7 @@ def setup_logging(output_dir, log_level=logging.INFO, log_file=None):
     :param log_file: Optional log file name. If not provided, defaults to the name of the running Python script.
     """
     # Create the output directory if it doesn't exist
-    if not os.path.exists(output_dir):
+    if not os.path.exists(output_dir) and not disable_file_hander:
         os.makedirs(output_dir)
 
     # If no log file is provided, use the name of the current Python script
@@ -22,15 +22,34 @@ def setup_logging(output_dir, log_level=logging.INFO, log_file=None):
     # Define the log file path inside the output directory
     log_file_path = os.path.join(output_dir, log_file)
 
-    # Set up logging to file and console with detailed format including filename and line number
-    logging.basicConfig(
-        level=log_level,  # Use the provided log level, default is INFO
-        format='%(asctime)s - %(levelname)s - [%(filename)s:%(funcName)s:%(lineno)d] - %(message)s',
-        handlers=[
-            logging.FileHandler(log_file_path),   # Log to the file
-            logging.StreamHandler()               # Log to the console
-        ]
-    )
+    # Get the root logger (or you can use a named logger like logging.getLogger('my_logger'))
+    logger = logging.getLogger()
+    logger.setLevel(log_level)  # Set the logging level for the logger
 
-    logging.info(f"Logging initialized at level {logging.getLevelName(log_level)}. Output directory: {output_dir}")
-    logging.info(f"Logging to file: {log_file_path}")
+    # Remove all existing handlers
+    if logger.hasHandlers():
+        for handler in logger.handlers[:]:
+            logger.removeHandler(handler)
+
+    # # Set up logging to file and console with detailed format including filename and line number
+    # logger = logging.getLogger()
+    # logger.setLevel(log_level)
+
+    if not disable_file_hander:
+        # File handler
+        file_handler = logging.FileHandler(log_file_path)
+        file_handler.setLevel(log_level)  # Set the same level for the file handler
+        file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - [%(filename)s:%(funcName)s:%(lineno)d] - %(message)s')
+        file_handler.setFormatter(file_formatter)
+        logger.addHandler(file_handler)
+
+    # Console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(log_level)  # Set the same level for the console handler
+    console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - [%(filename)s:%(funcName)s:%(lineno)d] - %(message)s')
+    console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
+
+    # Log some initial messages to verify
+    log_file_str = f"log_file: {log_file_path}" if not disable_file_hander else "log_file is disabled"
+    logging.info(f"Logging initialized at level {logging.getLevelName(log_level)}. {log_file_str}")

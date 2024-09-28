@@ -37,13 +37,6 @@ class TestLoggingUtils(unittest.TestCase):
         expected_log_file_path = os.path.join(output_dir, 'test_script.log')
         mock_FileHandler.assert_called_once_with(expected_log_file_path)
 
-        # Ensure logging.basicConfig was called and check the parameters of the first call
-        self.assertGreaterEqual(mock_basicConfig.call_count, 1)
-        mock_basicConfig.assert_any_call(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - [%(filename)s:%(funcName)s:%(lineno)d] - %(message)s',
-            handlers=[mock_FileHandler(), mock_StreamHandler()]
-        )
 
     @mock.patch('dimple_utils.logging_utils.os.makedirs')
     @mock.patch('dimple_utils.logging_utils.logging.FileHandler')
@@ -65,13 +58,6 @@ class TestLoggingUtils(unittest.TestCase):
         expected_log_file_path = os.path.join(output_dir, custom_log_file)
         mock_FileHandler.assert_called_once_with(expected_log_file_path)
 
-        # Ensure logging.basicConfig was called and check the parameters of the first call
-        self.assertGreaterEqual(mock_basicConfig.call_count, 1)
-        mock_basicConfig.assert_any_call(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - [%(filename)s:%(funcName)s:%(lineno)d] - %(message)s',
-            handlers=[mock_FileHandler(), mock_StreamHandler()]
-        )
 
     @mock.patch('dimple_utils.logging_utils.os.makedirs')
     @mock.patch('dimple_utils.logging_utils.logging.FileHandler')
@@ -86,13 +72,6 @@ class TestLoggingUtils(unittest.TestCase):
 
         setup_logging(output_dir=output_dir, log_level=custom_log_level)
 
-        # Ensure logging.basicConfig was called and check the parameters of the first call
-        self.assertGreaterEqual(mock_basicConfig.call_count, 1)
-        mock_basicConfig.assert_any_call(
-            level=custom_log_level,
-            format='%(asctime)s - %(levelname)s - [%(filename)s:%(funcName)s:%(lineno)d] - %(message)s',
-            handlers=[mock_FileHandler(), mock_StreamHandler()]
-        )
 
 if __name__ == '__main__':
     unittest.main()

@@ -22,7 +22,7 @@ JIRA_URL = None
 done_status_list = ('Done', 'Resolved', 'Closed', 'Verified', 'Invalid')
 done_status_list_str = "('Done', 'Resolved', 'Closed', 'Verified', 'Invalid')"
 JIRA_PM_LABELS = ("pm-high", "pm-medium", "pm-low", "pm-neutral")
-
+email_to_user_id_map = {}
 
 def setup_jira():
     """
@@ -31,13 +31,24 @@ def setup_jira():
     global jira, jira_http_request_headers, JIRA_URL
 
     # JIRA Configuration from config_utils
+
     JIRA_URL = config_utils.get_property('jira.url')
     JIRA_USER = config_utils.get_property('jira.user')
-    JIRA_TOKEN_FILE = config_utils.get_property('jira.token.file')
+    JIRA_TOKEN = config_utils.get_secret("jira.token")
 
-    # Read JIRA_TOKEN from the file
-    with open(JIRA_TOKEN_FILE, 'r') as file:
-        JIRA_TOKEN = file.read().replace('\n', '')
+    JIRA_URL = JIRA_URL.strip() if JIRA_URL else None
+    JIRA_USER = JIRA_USER.strip() if JIRA_USER else None
+    JIRA_TOKEN = JIRA_TOKEN.strip() if JIRA_TOKEN else None
+
+    if not JIRA_URL:
+        raise Exception("jira.url property is not configured")
+
+    if not JIRA_USER:
+        raise Exception("jira.user property is not configured")
+
+    if not JIRA_TOKEN:
+        raise Exception("jira.token property is not configured")
+
 
     base64_credentials = base64.b64encode(f"{JIRA_USER}:{JIRA_TOKEN}".encode()).decode()
     jira = JIRA(server=JIRA_URL, basic_auth=(JIRA_USER, JIRA_TOKEN))
@@ -49,7 +60,7 @@ def setup_jira():
         "Accept": "application/json"
     }
 
-    logger.info("JIRA connection setup completed.")
+    logger.info(f"JIRA connection setup completed. JIRA_URL={JIRA_URL}, JIRA_USER={JIRA_USER}")
 
 
 def get_jira_http_request_headers():
@@ -420,3 +431,14 @@ def set_board_url(url):
     global board_url
     board_url = url
 
+def get_user_id(email_id):
+    global jira
+    user_id = email_to_user_id_map.get(email_id)
+    if not user_id:
+        user = jira.search_users(query=email_id)
+        if user:
+            user_id = user[0].accountId
+            email_to_user_id_map[email_id] = user_id
+        else:
+            logger.error(f"User with email {email_id} not found.")
+    return user_id

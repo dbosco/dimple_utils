@@ -32,6 +32,16 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
+## Using from another project locally
+> Note: This should be where the setup.py file is located.
+```shell
+pip install -e /path/to/dimple-utils
+```
+And to uninstall:
+```shell
+pip uninstall dimple-utils
+```
+
 ## Running the tests
 
 ```bash
