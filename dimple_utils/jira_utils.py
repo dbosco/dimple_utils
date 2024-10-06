@@ -32,26 +32,27 @@ def setup_jira():
 
     # JIRA Configuration from config_utils
 
-    JIRA_URL = config_utils.get_property('jira.url')
-    JIRA_USER = config_utils.get_property('jira.user')
-    JIRA_TOKEN = config_utils.get_secret("jira.token")
+    JIRA_URL = config_utils.get_property('jira_url')
+    JIRA_USER = config_utils.get_property('jira_user')
+    JIRA_TOKEN = config_utils.get_secret("jira_token")
 
     JIRA_URL = JIRA_URL.strip() if JIRA_URL else None
     JIRA_USER = JIRA_USER.strip() if JIRA_USER else None
     JIRA_TOKEN = JIRA_TOKEN.strip() if JIRA_TOKEN else None
 
     if not JIRA_URL:
-        raise Exception("jira.url property is not configured")
+        raise Exception("jira_url property is not configured")
 
     if not JIRA_USER:
-        raise Exception("jira.user property is not configured")
+        raise Exception("jira_user property is not configured")
 
     if not JIRA_TOKEN:
-        raise Exception("jira.token property is not configured")
+        raise Exception("jira_token property is not configured")
 
 
     base64_credentials = base64.b64encode(f"{JIRA_USER}:{JIRA_TOKEN}".encode()).decode()
-    jira = JIRA(server=JIRA_URL, basic_auth=(JIRA_USER, JIRA_TOKEN))
+    jira = JIRA(server=JIRA_URL, basic_auth=(JIRA_USER, JIRA_TOKEN), validate=True)
+
 
     # Setup HTTP request headers
     jira_http_request_headers = {
@@ -135,9 +136,9 @@ def get_relevant_sprint(issue):
     # Prioritize active Sprint, fallback to future Sprint
     return active_sprint if active_sprint else future_sprint
 
-def fetch_issues(JIRA_PROJECT, num_issues=None, jql_query=None):
+def fetch_issues(jira_project, num_issues=None, jql_query=None):
     global jira
-    logger.info(f"Fetching issues for project {JIRA_PROJECT} with jql_query={jql_query} ...")
+    logger.info(f"Fetching issues for project {jira_project} with jql_query={jql_query} ...")
     max_results = num_issues if num_issues else False
 
     # Establishing connection with JIRA
@@ -147,7 +148,7 @@ def fetch_issues(JIRA_PROJECT, num_issues=None, jql_query=None):
         jql_query = jql_query.replace("’", "'")
         user_jql = f"and {jql_query}"
 
-    consolidated_jql_query = f"project={JIRA_PROJECT} {user_jql}".strip() + " ORDER BY RANK ASC"
+    consolidated_jql_query = f"project={jira_project} {user_jql}".strip() + " ORDER BY RANK ASC"
 
     logger.info(f"consolidated_jql_query={consolidated_jql_query}")
     issues = jira.search_issues(consolidated_jql_query, maxResults=max_results)
@@ -266,8 +267,37 @@ def apply_pm_labels(pm_label, input_text):
 
 def create_issue(fields):
     global jira
+    logging.info(f"Creating issue with fields={fields}")
     return jira.create_issue(fields=fields)
 
+
+def update_issue( jira_issue, fields ):
+    logging.info(f"Updating issue {jira_issue.key} with fields={fields}")
+    jira_issue.update(fields)
+
+def close_issue( jira_issue, comment=None ):
+    logging.info(f"Closing issue {jira_issue.key} with comment={comment}")
+
+    if comment:
+        add_comment(jira_issue.key, comment)
+
+    transistion_close_id = None
+    transitions = jira.transitions(jira_issue.key)
+    for transition in transitions:
+        if transition['name'].lower() == 'done':
+            transistion_close_id = transition['id']
+            logging.info(f"Transition ID for Done status found for issue {jira_issue.key}.")
+            break
+
+    if not transistion_close_id:
+        logger.error(f"Transition ID for Done status not found for issue {jira_issue.key}. Available transitions: "
+                     f"{transitions}")
+    else:
+        jira.transition_issue(jira_issue, transistion_close_id)
+
+def delete_issue( jira_issue ):
+    logging.info(f"Deleting issue {jira_issue.key}")
+    jira.delete_issue(jira_issue)
 
 def create_issue_link(type, inwardIssue, outwardIssue):
     global jira
@@ -286,6 +316,11 @@ def issue(key):
     logger.info(f"Fetching issue {key}...")
     return jira.issue(key)
 
+def get_issues_by_field( jira_project, field_name, field_value):
+    global jira
+    jql_query = f"{field_name}='{field_value}'"
+    logger.info(f"Fetching issues for field_name={field_name} field_value={field_value} jql_query={jql_query} ...")
+    return fetch_issues(jira_project, jql_query=jql_query)
 
 def transition_issue(task, fields):
     global jira
@@ -442,3 +477,85 @@ def get_user_id(email_id):
         else:
             logger.error(f"User with email {email_id} not found.")
     return user_id
+
+####### Borrowed from https://github.com/eshack94/md-to-jira. Works like a charm! ########
+def convert_line(line):
+    # Convert headers
+    line = re.sub(r'^#{6}\s*(.+)', r'h6. \1', line)
+    line = re.sub(r'^#{5}\s*(.+)', r'h5. \1', line)
+    line = re.sub(r'^#{4}\s*(.+)', r'h4. \1', line)
+    line = re.sub(r'^#{3}\s*(.+)', r'h3. \1', line)
+    line = re.sub(r'^#{2}\s*(.+)', r'h2. \1', line)
+    line = re.sub(r'^#\s*(.+)', r'h1. \1', line)
+
+    # Convert bold and italic
+    line = re.sub(r'\*\*(.+?)\*\*', r'*\1*', line)
+    line = re.sub(r'__(.+?)__', r'*\1*', line)
+    line = re.sub(r'\*(.+?)\*', r'_\1_', line)
+    line = re.sub(r'_(.+?)_', r'_\1_', line)
+
+    # Convert inline code
+    line = re.sub(r'`([^`]+)`', r'{{\1}}', line)
+
+    # Convert strikethrough
+    line = re.sub(r'~~(.+?)~~', r'-\1-', line)
+
+    # Convert links
+    line = re.sub(r'\[(.*?)\]\((.+?)\)', r'[\1|\2]', line)
+
+    # Convert unordered lists
+    line = re.sub(r'^\*\s+', r'- ', line)
+
+    # Convert GFM task lists
+    line = re.sub(r'^\s*-\s*\[(x|X| )\]', lambda match: f'[{match.group(1)}]', line)
+
+    return line
+
+
+def convert_multiline_elements(content):
+    # Convert multiline fenced code blocks
+    content = re.sub(r'```(\w+)?\n(.*?)\n```', process_code_block, content, flags=re.MULTILINE | re.DOTALL)
+
+    # Convert indented code blocks
+    content = re.sub(r'((?:^ {4}.*\n?)+)', process_indented_code_block, content, flags=re.MULTILINE)
+
+    return content
+
+
+def process_code_block(match):
+    lang = match.group(1)
+    code = match.group(2)
+    if lang:
+        return f'{{code:{lang}}}\n{code}\n{{code}}'
+    else:
+        return f'{{code}}\n{code}\n{{code}}'
+
+
+def process_indented_code_block(match):
+    code = match.group(1)
+    # Remove the leading 4 spaces or tab from each line
+    code = re.sub(r'^ {4}|\t', '', code, flags=re.MULTILINE)
+    return f'{{code}}\n{code}{{code}}\n'
+
+
+def markdown_to_jira(content):
+    content = convert_multiline_elements(content)
+
+    # Process the lines
+    # add toggle flag to keep track of whether we're in a code block or not
+    # so we don't convert # characters in code blocks
+    # toggles on when we enter a code block and toggles off when we exit
+    # toggle state determines whether we convert the line or not
+    in_code_block = False
+    jira_lines = []
+    for line in content.splitlines():
+        if line.startswith("```") or line.startswith("{code"):
+            in_code_block = not in_code_block
+
+        if not in_code_block:
+            line = convert_line(line)
+        jira_lines.append(line)
+
+    # Create a string from the converted lines
+    return '\n'.join(jira_lines)
+#######  End borrowed code ########

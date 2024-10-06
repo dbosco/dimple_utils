@@ -46,6 +46,15 @@ def load_properties(default_file: str = 'default.properties', override_file: str
         print("No override file found. Using default properties only.")
         logging.warning("No override file found. Using default properties only.")
 
+    # Let's load the environment variables. Environment variables will override the properties file
+    # Get all the environment variables
+    env_vars = os.environ
+    for key in env_vars:
+        # Replace _dot_ with . in the key
+        key = key.replace("_dot_", ".")
+        config.set("DEFAULT", key, env_vars[key])
+        print(f"Set {key} from environment variables")
+
     # Load secrets file (optional)
     if secrets_file and os.path.exists(secrets_file):
         temp_config = configparser.ConfigParser()
@@ -116,6 +125,16 @@ def print_properties(debug_string: str):
             print(f"  {key}")
         logging.info(f"Explicit keys in section '{section}': {explicit_keys}")
 
+
+def set_property(key: str, value: str, section: str = 'DEFAULT'):
+    """
+    Set a property value in the configuration object.
+    :param key:
+    :param value:
+    :param section:
+    :return:
+    """
+    config.set(section, key, value)
 
 def get_property(key: str, section: str = 'DEFAULT', fallback: any = None) -> str:
     """

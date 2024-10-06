@@ -10,9 +10,6 @@ def setup_logging(output_dir, log_level=logging.INFO, log_file=None, disable_fil
     :param log_level: Optional log level (default is logging.INFO).
     :param log_file: Optional log file name. If not provided, defaults to the name of the running Python script.
     """
-    # Create the output directory if it doesn't exist
-    if not os.path.exists(output_dir) and not disable_file_hander:
-        os.makedirs(output_dir)
 
     # If no log file is provided, use the name of the current Python script
     if log_file is None:
@@ -34,6 +31,21 @@ def setup_logging(output_dir, log_level=logging.INFO, log_file=None, disable_fil
     # # Set up logging to file and console with detailed format including filename and line number
     # logger = logging.getLogger()
     # logger.setLevel(log_level)
+
+    # If file system is writeable, add a file handler
+    # Check if file system is writeable
+    if not disable_file_hander:
+        try:
+            # Create the output directory if it doesn't exist
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+
+            with open(log_file_path, 'a'):
+                    pass
+        except IOError:
+            disable_file_hander = True
+            logging.error(f"Log file {log_file_path} is not writeable. Disabling file handler.")
+
 
     if not disable_file_hander:
         # File handler
