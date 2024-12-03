@@ -46,13 +46,32 @@ def load_properties(default_file: str = 'default.properties', override_file: str
         print("No override file found. Using default properties only.")
         logging.warning("No override file found. Using default properties only.")
 
+    # Print all the configurations
+    print(f"[BEGIN] Printing current configurations (before loading env and secrets):")
+    logging.info(f" [BEGIN] Printing current configurations (before loading env and secrets):")
+    for section in config.sections():
+        if section != "SECRETS":
+            print(f"\nSection: {section}")
+            logging.info(f"Section={section}")
+
+            for key, value in config.items(section):
+                print(f"  {key} = {value}")
+                logging.info(f"  {key} = {value}")
+    print(f"[DONE] Printing current configurations (before loading env and secrets).")
+    logging.info(f" [DONE] Printing current configurations (before loading env and secrets).")
+
+
     # Let's load the environment variables. Environment variables will override the properties file
     # Get all the environment variables
     env_vars = os.environ
     for key in env_vars:
+        value = env_vars[key]
+        if "$" in value:
+            # With $ python gives exception
+            continue
         # Replace _dot_ with . in the key
         key = key.replace("_dot_", ".")
-        config.set("DEFAULT", key, env_vars[key])
+        config.set("DEFAULT", key, value)
         print(f"Set {key} from environment variables")
 
     # Load secrets file (optional)
@@ -72,6 +91,7 @@ def load_properties(default_file: str = 'default.properties', override_file: str
                 if not config.has_section(section):
                     config.add_section(section)
                 for key, value in temp_config.items(section):
+                    print(f"Overriding {section}.{key} with value {value} from secrets file {secrets_file}")
                     config.set(section, key, value)
 
         print(f"Secrets properties loaded from {secrets_file}")
@@ -110,6 +130,7 @@ def print_properties(debug_string: str):
         print("Keys in DEFAULT section:")
         for key in config.defaults():
             print(f"  {key}")
+
         logging.info(f"Keys in DEFAULT section: {list(config.defaults().keys())}")
 
     # Print keys in each section, excluding keys inherited from DEFAULT
@@ -124,6 +145,11 @@ def print_properties(debug_string: str):
         for key in explicit_keys:
             print(f"  {key}")
         logging.info(f"Explicit keys in section '{section}': {explicit_keys}")
+
+    for section in config.sections():
+        if section != "SECRETS":
+            for key, value in config.items(section):
+                logging.info(f"[{section}].{key}={value}")
 
 
 def set_property(key: str, value: str, section: str = 'DEFAULT'):

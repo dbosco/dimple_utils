@@ -2,6 +2,7 @@ from openai import OpenAI
 from dimple_utils import config_utils
 from privacera_shield import client as privacera_shield_client
 from privacera_shield.model import ConversationType
+import os
 import time
 import logging
 import uuid
@@ -26,6 +27,7 @@ def initialize():
     # Load the OpenAI key from its file
     with open(openai_key_file, 'r') as f:
         openai_key = f.read().strip()
+        os.environ["OPENAI_API_KEY"] = openai_key
     openai_client = OpenAI(api_key=openai_key)
     openai_model = config_utils.get_property("openai.model", section="OPENAI", fallback=openai_model)
     retry_delay = config_utils.get_int_property("openai.retry.delay", section="OPENAI", fallback=retry_delay)
