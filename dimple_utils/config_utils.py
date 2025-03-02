@@ -1,6 +1,7 @@
 import configparser
 import os
 import logging
+import dotenv
 
 config = None
 secret_config = None
@@ -15,11 +16,13 @@ def load_properties(default_file: str = 'default.properties', override_file: str
     :return: Loaded configuration object (excluding secrets).
     """
     global config, secret_config
-    config = configparser.ConfigParser()
-    secret_config = configparser.ConfigParser()
+    config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
+    secret_config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
 
     # Load default properties
     try:
+        dotenv.load_dotenv()
+
         print(f"Default properties file: {os.path.abspath(default_file)}")
         config.read(default_file)
         print(f"Default properties loaded from {default_file}")

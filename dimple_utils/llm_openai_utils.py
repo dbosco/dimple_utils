@@ -25,6 +25,11 @@ def initialize():
     openai_key_file = config_utils.get_property("openai.key.file", section="OPENAI", fallback="openai_key_dont_commit.txt")
     logging.info(f"Initializing OpenAI with key file: {openai_key_file}")
     # Load the OpenAI key from its file
+    # Let's check if the file exists
+    if not os.path.exists(openai_key_file):
+        # log the current folder
+        logging.error(f"Current folder: {os.getcwd()}, openai_key_file={openai_key_file} not found")
+        raise Exception(f"OpenAI key file not found: Current folder: {os.getcwd()}, openai_key_file={openai_key_file}")
     with open(openai_key_file, 'r') as f:
         openai_key = f.read().strip()
         os.environ["OPENAI_API_KEY"] = openai_key
