@@ -18,19 +18,26 @@ def load_properties(default_file: str = 'default.properties', override_file: str
     global config, secret_config
     config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
     secret_config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
+    abs_default_file = os.path.abspath(default_file)
 
     # Load default properties
     try:
         dotenv.load_dotenv()
 
-        print(f"Default properties file: {os.path.abspath(default_file)}")
-        config.read(default_file)
-        print(f"Default properties loaded from {default_file}")
-        print_properties("Before override")
-
-    except FileNotFoundError as e:
-        print(f"Default file {default_file} not found: {e}")
-        logging.error(f"Default file {default_file} not found: {e}")
+        # Check if the file exists
+        default_file_exists = os.path.exists(abs_default_file)
+        print(f"Default properties file: {abs_default_file}. Exists: {default_file_exists}")
+        if default_file_exists:
+            config.read(abs_default_file)
+            print(f"Default properties loaded from {abs_default_file}")
+            print_properties("Before override")
+        else:
+            print(f"Default configuration is mandatory. Please provide a valid default.properties file. Property file location: {abs_default_file}")
+            logging.error(f"Default configuration is mandatory. Please provide a valid default.properties file. Property file location: {abs_default_file}")
+            raise FileNotFoundError(f"Default configuration is mandatory. Please provide a valid default.properties file. Property file location: {abs_default_file}")
+    except Exception as e:
+        print(f"Error loading default properties {abs_default_file}: {e}")
+        logging.error(f"Error loading default properties {abs_default_file}: {e}")
         raise
 
     # Check if override file is passed via input or environment variable

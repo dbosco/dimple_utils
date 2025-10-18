@@ -43,7 +43,7 @@ def initialize():
     logging.info(f"OpenAI Initialized. openai_model will be {openai_model}!!!")
 
 
-def infer_query(prompt, paig_service_user, log_msg=""):
+def infer_query(prompt, paig_service_user, response_format=None, log_msg=""):
 
     with privacera_shield_client.create_shield_context(username=paig_service_user):
         thread_id = str(uuid.uuid4())
@@ -58,6 +58,7 @@ def infer_query(prompt, paig_service_user, log_msg=""):
             try:
                 response = openai_client.chat.completions.create(model=openai_model,
                                                                  messages=[{"role": "user", "content": updated_prompt_text}],
+                                                                 response_format=response_format,
                                                                  temperature=0,
                                                                  max_tokens=max_response_tokens)
                 break
