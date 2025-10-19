@@ -2,3 +2,6 @@ jira
 pymongo
 requests
 tiktoken
+openai
+anthropic
+python-dotenv
