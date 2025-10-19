@@ -59,10 +59,10 @@ class OpenAIClient(BaseLLM):
     def _load_from_config(self):
         """Load configuration from config_utils if available."""
         try:
-            self.model = config_utils.get_property("openai.model", section="OPENAI", fallback=self.model)
-            self.retry_delay = config_utils.get_int_property("openai.retry.delay", section="OPENAI", fallback=self.retry_delay)
-            self.max_retries = config_utils.get_int_property("openai.max.retries", section="OPENAI", fallback=self.max_retries)
-            self.max_response_tokens = config_utils.get_int_property("openai.max.response_tokens", section="OPENAI", fallback=self.max_response_tokens)
+            self.model = config_utils.get_property("openai.model", fallback=self.model)
+            self.retry_delay = config_utils.get_int_property("openai.retry.delay", fallback=self.retry_delay)
+            self.max_retries = config_utils.get_int_property("openai.max.retries", fallback=self.max_retries)
+            self.max_response_tokens = config_utils.get_int_property("openai.max.response_tokens", fallback=self.max_response_tokens)
             self._config_loaded = True
         except Exception as e:
             logging.warning(f"Could not load config, using defaults: {e}")
@@ -94,7 +94,7 @@ class OpenAIClient(BaseLLM):
         # Priority 4: Config file (if use_config=True)
         elif hasattr(self, '_config_loaded') and self._config_loaded:
             try:
-                config_key_file = config_utils.get_property("openai.key.file", section="OPENAI", fallback="openai_key_dont_commit.txt")
+                config_key_file = config_utils.get_property("openai.key.file", fallback="openai_key_dont_commit.txt")
                 if os.path.exists(config_key_file):
                     with open(config_key_file, 'r') as f:
                         resolved_api_key = f.read().strip()

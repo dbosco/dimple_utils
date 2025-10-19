@@ -60,10 +60,10 @@ class AnthropicClient(BaseLLM):
     def _load_from_config(self):
         """Load configuration from config_utils if available."""
         try:
-            self.model = config_utils.get_property("anthropic.model", section="ANTHROPIC", fallback=self.model)
-            self.retry_delay = config_utils.get_int_property("anthropic.retry.delay", section="ANTHROPIC", fallback=self.retry_delay)
-            self.max_retries = config_utils.get_int_property("anthropic.max.retries", section="ANTHROPIC", fallback=self.max_retries)
-            self.max_response_tokens = config_utils.get_int_property("anthropic.max.response_tokens", section="ANTHROPIC", fallback=self.max_response_tokens)
+            self.model = config_utils.get_property("anthropic.model", fallback=self.model)
+            self.retry_delay = config_utils.get_int_property("anthropic.retry.delay", fallback=self.retry_delay)
+            self.max_retries = config_utils.get_int_property("anthropic.max.retries", fallback=self.max_retries)
+            self.max_response_tokens = config_utils.get_int_property("anthropic.max.response_tokens", fallback=self.max_response_tokens)
             self._config_loaded = True
         except Exception as e:
             logging.warning(f"Could not load config, using defaults: {e}")
@@ -95,7 +95,7 @@ class AnthropicClient(BaseLLM):
         # Priority 4: Config file (if use_config=True)
         elif hasattr(self, '_config_loaded') and self._config_loaded:
             try:
-                config_key_file = config_utils.get_property("anthropic.key.file", section="ANTHROPIC", fallback="anthropic_key_dont_commit.txt")
+                config_key_file = config_utils.get_property("anthropic.key.file", fallback="anthropic_key_dont_commit.txt")
                 if os.path.exists(config_key_file):
                     with open(config_key_file, 'r') as f:
                         resolved_api_key = f.read().strip()
