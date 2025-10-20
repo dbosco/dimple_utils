@@ -1,6 +1,6 @@
 from anthropic import Anthropic
 from dimple_utils import config_utils
-from dimple_utils.llm_base import BaseLLM
+from dimple_utils.llm_base import BaseLLM, LLMResponse
 import os
 import time
 import logging
@@ -122,7 +122,7 @@ class AnthropicClient(BaseLLM):
                     temperature: float,
                     max_tokens: int,
                     response_format: Optional[Dict[str, Any]] = None,
-                    log_msg: str = "") -> str:
+                    log_msg: str = "") -> LLMResponse:
         """
         Anthropic-specific inference implementation.
         
@@ -135,7 +135,7 @@ class AnthropicClient(BaseLLM):
             log_msg: Additional log message
             
         Returns:
-            The response text from Anthropic
+            LLMResponse containing text_reply, input_tokens, output_tokens, and time_taken_ms
         """
         # Anthropic doesn't support response_format, so we ignore it
         response = self.anthropic_client.messages.create(
@@ -144,7 +144,17 @@ class AnthropicClient(BaseLLM):
             temperature=temperature,
             messages=[{"role": "user", "content": prompt}]
         )
-        return response.content[0].text
+        
+        # Extract token usage information
+        input_tokens = response.usage.input_tokens if response.usage else 0
+        output_tokens = response.usage.output_tokens if response.usage else 0
+        
+        return LLMResponse(
+            text_reply=response.content[0].text,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            time_taken_ms=0  # Will be set by the base class
+        )
 
 
 # Legacy function-based interface for backward compatibility

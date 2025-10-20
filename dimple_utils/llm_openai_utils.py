@@ -1,6 +1,6 @@
 from openai import OpenAI
 from dimple_utils import config_utils
-from dimple_utils.llm_base import BaseLLM
+from dimple_utils.llm_base import BaseLLM, LLMResponse
 import os
 import time
 import logging
@@ -121,7 +121,7 @@ class OpenAIClient(BaseLLM):
                     temperature: float,
                     max_tokens: int,
                     response_format: Optional[Dict[str, Any]] = None,
-                    log_msg: str = "") -> str:
+                    log_msg: str = "") -> LLMResponse:
         """
         OpenAI-specific inference implementation.
         
@@ -134,7 +134,7 @@ class OpenAIClient(BaseLLM):
             log_msg: Additional log message
             
         Returns:
-            The response text from OpenAI
+            LLMResponse containing text_reply, input_tokens, output_tokens, and time_taken_ms
         """
         response = self.openai_client.chat.completions.create(
             model=model,
@@ -143,7 +143,17 @@ class OpenAIClient(BaseLLM):
             temperature=temperature,
             max_tokens=max_tokens
         )
-        return response.choices[0].message.content
+        
+        # Extract token usage information
+        input_tokens = response.usage.prompt_tokens if response.usage else 0
+        output_tokens = response.usage.completion_tokens if response.usage else 0
+        
+        return LLMResponse(
+            text_reply=response.choices[0].message.content,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            time_taken_ms=0  # Will be set by the base class
+        )
     
     
 # Legacy function-based interface for backward compatibility

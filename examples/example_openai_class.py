@@ -66,7 +66,10 @@ def main():
             prompt="Who was the first president of the United States?",
             log_msg="Test query"
         )
-        print(f"Response: {response}")
+        print(f"Response: {response.text_reply}")
+        print(f"Input tokens: {response.input_tokens}")
+        print(f"Output tokens: {response.output_tokens}")
+        print(f"Time taken: {response.time_taken_ms}ms")
     else:
         print("No valid client available for inference")
     

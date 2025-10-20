@@ -1,6 +1,19 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any
+from dataclasses import dataclass
 import logging
+import time
+
+
+@dataclass
+class LLMResponse:
+    """
+    Structured response from LLM inference containing text and metadata.
+    """
+    text_reply: str
+    input_tokens: int
+    output_tokens: int
+    time_taken_ms: int
 
 
 class BaseLLM(ABC):
@@ -38,7 +51,7 @@ class BaseLLM(ABC):
                    model: Optional[str] = None,
                    temperature: Optional[float] = None,
                    max_tokens: Optional[int] = None,
-                   max_retries: Optional[int] = None) -> str:
+                   max_retries: Optional[int] = None) -> LLMResponse:
         """
         Execute inference query with the configured LLM client.
         This is the public interface that handles common logic including retry.
@@ -53,7 +66,7 @@ class BaseLLM(ABC):
             max_retries: Override the default max retries for this request
             
         Returns:
-            The response text from the LLM
+            LLMResponse containing text_reply, input_tokens, output_tokens, and time_taken_ms
         """
         if not self._initialized:
             raise RuntimeError("LLM client not initialized. Call initialize() first.")
@@ -66,7 +79,8 @@ class BaseLLM(ABC):
         
         # Use retry logic to call the provider-specific implementation
         def _make_inference_request():
-            return self._infer_query(
+            start_time = time.time()
+            response = self._infer_query(
                 prompt=prompt,
                 model=actual_model,
                 temperature=actual_temperature,
@@ -74,6 +88,21 @@ class BaseLLM(ABC):
                 response_format=response_format,
                 log_msg=log_msg
             )
+            end_time = time.time()
+            time_taken_ms = int((end_time - start_time) * 1000)
+            
+            # If response is already an LLMResponse, update the timing
+            if isinstance(response, LLMResponse):
+                response.time_taken_ms = time_taken_ms
+                return response
+            else:
+                # Legacy support - convert string response to LLMResponse
+                return LLMResponse(
+                    text_reply=response,
+                    input_tokens=0,  # Will be updated by provider implementations
+                    output_tokens=0,  # Will be updated by provider implementations
+                    time_taken_ms=time_taken_ms
+                )
         
         return self._handle_retry_logic("LLM inference", _make_inference_request, actual_max_retries)
     
@@ -84,7 +113,7 @@ class BaseLLM(ABC):
                     temperature: float,
                     max_tokens: int,
                     response_format: Optional[Dict[str, Any]] = None,
-                    log_msg: str = "") -> str:
+                    log_msg: str = "") -> LLMResponse:
         """
         Provider-specific inference implementation.
         Must be implemented by subclasses.
@@ -98,7 +127,7 @@ class BaseLLM(ABC):
             log_msg: Additional log message
             
         Returns:
-            The response text from the LLM
+            LLMResponse containing text_reply, input_tokens, output_tokens, and time_taken_ms
         """
         pass
     
