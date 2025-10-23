@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any
 from dataclasses import dataclass
 import logging
 import time
+from .config_utils import get_int_property
 
 
 @dataclass
@@ -19,13 +20,17 @@ class LLMResponse:
 class BaseLLM(ABC):
     """
     Base class for LLM providers that defines the common interface.
+    
+    Configuration:
+    - max_response_tokens: If None, will use config property 'llm.max_response_tokens' 
+      with fallback to 20480. If provided, will use the explicit value.
     """
     
     def __init__(self, 
                  model: str,
                  retry_delay: int = 60,
                  max_retries: int = 5,
-                 max_response_tokens: int = 4096,
+                 max_response_tokens: int = None,
                  temperature: float = 0.0):
         """
         Initialize the base LLM client.
@@ -34,13 +39,19 @@ class BaseLLM(ABC):
             model: The model name to use
             retry_delay: Delay between retries in seconds
             max_retries: Maximum number of retry attempts
-            max_response_tokens: Maximum tokens in response
+            max_response_tokens: Maximum tokens in response (if None, will use config property or fallback to 20480)
             temperature: Temperature for response generation
         """
         self.model = model
         self.retry_delay = retry_delay
         self.max_retries = max_retries
-        self.max_response_tokens = max_response_tokens
+        
+        # Use config property if max_response_tokens is not provided, fallback to 20480
+        if max_response_tokens is None:
+            self.max_response_tokens = get_int_property('llm.max_response_tokens', fallback=20480)
+        else:
+            self.max_response_tokens = max_response_tokens
+            
         self.temperature = temperature
         self._initialized = False
     

@@ -27,7 +27,7 @@ class OpenAIClient(BaseLLM):
                  model: str = "gpt-4o",
                  retry_delay: int = 60,
                  max_retries: int = 5,
-                 max_response_tokens: int = 4096,
+                 max_response_tokens: int = None,
                  temperature: float = 0.0,
                  use_config: bool = True):
         """
@@ -39,7 +39,7 @@ class OpenAIClient(BaseLLM):
             model: OpenAI model to use
             retry_delay: Delay between retries in seconds
             max_retries: Maximum number of retry attempts
-            max_response_tokens: Maximum tokens in response
+            max_response_tokens: Maximum tokens in response (if None, will use config property or fallback to 20480)
             temperature: Temperature for response generation
             use_config: Whether to load additional settings from config
         """
