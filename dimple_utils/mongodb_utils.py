@@ -17,12 +17,12 @@ def initialize():
     :param uri: MongoDB connection URI.
     :return: A pymongo MongoClient instance.
     """
-    host = config_utils.get_property('mongodb.host', section='MONGODB', fallback='localhost')
-    port = config_utils.get_int_property('mongodb.port', section='MONGODB', fallback=27017)
-    username = config_utils.get_property('mongodb.username', section='MONGODB', fallback=None)
-    password = config_utils.get_secret('mongodb.password', section='MONGODB')
-    auth_source = config_utils.get_property('mongodb.auth_source', section='MONGODB', fallback='admin')
-    ssl_enabled = config_utils.get_bool_property('mongodb.ssl_enabled', section='MONGODB', fallback=False)
+    host = config_utils.get_property('mongodb.host', fallback='localhost')
+    port = config_utils.get_int_property('mongodb.port', fallback=27017)
+    username = config_utils.get_property('mongodb.username', fallback=None)
+    password = config_utils.get_secret('mongodb.password')
+    auth_source = config_utils.get_property('mongodb.auth_source', fallback='admin')
+    ssl_enabled = config_utils.get_bool_property('mongodb.ssl_enabled', fallback=False)
 
     logging.info(f"host={host}, port={port}, username={username}, auth_source={auth_source}, ssl_enabled={ssl_enabled}")
 
